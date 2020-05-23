@@ -2,7 +2,8 @@
 
 namespace Digbang\SafeQueue;
 
-use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\ORM\EntityManager;
 use Exception;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -16,29 +17,29 @@ use Throwable;
 /*final*/ class Worker extends IlluminateWorker
 {
     /**
-     * @var EntityManagerInterface
+     * @var ManagerRegistry
      */
-    private $entityManager;
+    protected $managerRegistry;
 
     /**
      * Worker constructor.
      *
-     * @param QueueManager              $manager
-     * @param Dispatcher                $events
-     * @param EntityManagerInterface    $entityManager
-     * @param ExceptionHandler          $exceptions
+     * @param QueueManager     $manager
+     * @param Dispatcher       $events
+     * @param ManagerRegistry    $managerRegistry
+     * @param ExceptionHandler $exceptions
      * @param  \callable $isDownForMaintenance
      */
     public function __construct(
         QueueManager $manager,
         Dispatcher $events,
-        EntityManagerInterface $entityManager,
+        ManagerRegistry $managerRegistry,
         ExceptionHandler $exceptions,
         callable $isDownForMaintenance
     ) {
         parent::__construct($manager, $events, $exceptions, $isDownForMaintenance);
 
-        $this->entityManager = $entityManager;
+        $this->managerRegistry = $managerRegistry;
     }
 
     /**
@@ -76,11 +77,11 @@ use Throwable;
      */
     private function assertEntityManagerOpen()
     {
-        if ($this->entityManager->isOpen()) {
-            return;
+        foreach ($this->managerRegistry->getManagers() as $entityManager) {
+            if (!$entityManager->isOpen()) {
+                throw new EntityManagerClosedException;
+            }
         }
-
-        throw new EntityManagerClosedException;
     }
 
     /**
@@ -88,7 +89,9 @@ use Throwable;
      */
     private function assertEntityManagerClear()
     {
-        $this->entityManager->clear();
+        foreach ($this->managerRegistry->getManagers() as $entityManager) {
+            $entityManager->clear();
+        }
     }
 
     /**
@@ -98,11 +101,13 @@ use Throwable;
      */
     private function assertGoodDatabaseConnection()
     {
-        $connection = $this->entityManager->getConnection();
+        foreach ($this->managerRegistry->getManagers() as $entityManager) {
+            $connection = $entityManager->getConnection();
 
-        if ($connection->ping() === false) {
-            $connection->close();
-            $connection->connect();
+            if ($connection->ping() === false) {
+                $connection->close();
+                $connection->connect();
+            }
         }
     }
 }

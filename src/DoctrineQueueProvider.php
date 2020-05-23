@@ -55,7 +55,7 @@ class DoctrineQueueProvider extends ServiceProvider
             return new Worker(
                 $app['queue'],
                 $app['events'],
-                $app['em'],
+                $app['Doctrine\Common\Persistence\ManagerRegistry'],
                 $app[ExceptionHandler::class],
                 $isDownForMaintenance
             );
