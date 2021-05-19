@@ -4,9 +4,10 @@ namespace Digbang\SafeQueue\Console;
 
 use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Queue\Console\WorkCommand as IlluminateWorkCommand;
+use Laravel\Horizon\Console\WorkCommand as HorizonWorkCommand;
 use Digbang\SafeQueue\Worker;
 
-class WorkCommand extends IlluminateWorkCommand
+class WorkCommand extends HorizonWorkCommand
 {
     const SIGNATURE_REGEX_PATTERN = '/([\w:-]+)(?=\s|\{)/i';
 
