@@ -62,13 +62,16 @@ use Throwable;
             parent::runJob($job, $connectionName, $options);
         } catch (EntityManagerClosedException $e) {
             $this->exceptions->report($e);
-            $this->stop(1);
+            $this->failJob($job, $e);
+            $this->shouldQuit = true;
         } catch (Exception $e) {
             $this->exceptions->report(new QueueSetupException("Error in queue setup while running a job", 0, $e));
-            $this->stop(1);
+            $this->failJob($job, $e);
+            $this->shouldQuit = true;
         } catch (Throwable $e) {
             $this->exceptions->report(new QueueSetupException("Error in queue setup while running a job", 0, new FatalThrowableError($e)));
-            $this->stop(1);
+            $this->failJob($job, $e);
+            $this->shouldQuit = true;
         }
     }
 
